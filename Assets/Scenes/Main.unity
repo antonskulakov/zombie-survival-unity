@@ -1877,7 +1877,7 @@ Transform:
   m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 8
+  m_RootOrder: 9
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &397112958 stripped
 GameObject:
@@ -2374,6 +2374,17 @@ MonoBehaviour:
   attackIndexParam: AttackIndex
   hitTrigger: Hit
   blockMoveWhileAttacking: 1
+  bloodLevel: 1
+  bloodSmallPrefab: {fileID: 0}
+  bloodMediumPrefab: {fileID: 5680985282320274943, guid: 721942b55459111449ce800d34da797f,
+    type: 3}
+  bloodHeavyPrefab: {fileID: 0}
+  bloodSpawnOffset: {x: 0, y: 1, z: 0.2}
+  bloodScale: 1
+  bloodSpawnChance: 1
+  doubleSpawnOnExtreme: 1
+  bloodDelay: 0.1
+  bloodDelayJitter: 0.02
 --- !u!95 &833627862
 Animator:
   serializedVersion: 3
@@ -3504,7 +3515,7 @@ PrefabInstance:
     - target: {fileID: -8679921383154817045, guid: 418b3448fd0776049ae3cefd58d2c4ea,
         type: 3}
       propertyPath: m_RootOrder
-      value: 9
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 418b3448fd0776049ae3cefd58d2c4ea,
         type: 3}

@@ -25,6 +25,35 @@ public class PlayerController : MonoBehaviour
     public string hitTrigger = "Hit";
     public bool blockMoveWhileAttacking = false;
 
+    // ===================== BLOOD VFX =====================
+    public enum WeaponBloodLevel { Low, Medium, High, Extreme }
+
+    [Header("VFX Blood")]
+    public WeaponBloodLevel bloodLevel = WeaponBloodLevel.Medium;
+
+    public GameObject bloodSmallPrefab;
+    public GameObject bloodMediumPrefab;
+    public GameObject bloodHeavyPrefab;
+
+    [Tooltip("Сдвиг точки крови относительно attackPoint (чтобы не спавнилось в центре игрока).")]
+    public Vector3 bloodSpawnOffset = new Vector3(0f, 1.0f, 0.2f);
+
+    [Tooltip("Доп. масштаб крови (общий).")]
+    public float bloodScale = 1f;
+
+    [Tooltip("Шанс спавна крови, если удар попал (1 = всегда).")]
+    [Range(0f, 1f)] public float bloodSpawnChance = 1f;
+
+    [Tooltip("Если включено — при Extreme добавим второй спавн для 'кровищи'.")]
+    public bool doubleSpawnOnExtreme = true;
+
+[Tooltip("Задержка крови после нанесения урона (сек). 0.06-0.12 обычно идеально.")]
+public float bloodDelay = 0.08f;
+
+[Tooltip("Небольшой разброс задержки, чтобы выглядело живее.")]
+public float bloodDelayJitter = 0.02f;
+    // ======================================================
+
     private CharacterController _cc;
     private Vector3 _velocity;
     private float _nextAttackTime;
@@ -38,10 +67,10 @@ public class PlayerController : MonoBehaviour
     }
 
     private void OnDrawGizmosSelected()
-{
-    if (!attackPoint) return;
-    Gizmos.DrawWireSphere(attackPoint.position, attackRange);
-}
+    {
+        if (!attackPoint) return;
+        Gizmos.DrawWireSphere(attackPoint.position, attackRange);
+    }
 
     private void Update()
     {
@@ -59,7 +88,6 @@ public class PlayerController : MonoBehaviour
     {
         Debug.Log($"H={Input.GetAxisRaw("Horizontal")} V={Input.GetAxisRaw("Vertical")}");
 
-        // если хочешь стопорить движение во время атаки/хита — включи флаги
         if (_isHitLock) { SetSpeedAnim(0f); ApplyGravityOnly(); return; }
 
         float x = Input.GetAxisRaw("Horizontal");
@@ -69,26 +97,21 @@ public class PlayerController : MonoBehaviour
         float mag = Mathf.Clamp01(move.magnitude);
         if (mag > 0.001f) move.Normalize();
 
-        // поворот по направлению движения
         if (move.sqrMagnitude > 0.0001f)
         {
             Quaternion target = Quaternion.LookRotation(move, Vector3.up);
             transform.rotation = Quaternion.Slerp(transform.rotation, target, rotateSpeed * Time.deltaTime);
         }
 
-if (blockMoveWhileAttacking && IsInAttack())
-        return;
-  
-        // движение
+        if (blockMoveWhileAttacking && IsInAttack())
+            return;
+
         if (!(blockMoveWhileAttacking && Time.time < _nextAttackTime - (attackCooldown * 0.9f)))
         {
             _cc.Move(move * moveSpeed * Time.deltaTime);
         }
 
-        // анимация скорости (0..1)
         SetSpeedAnim(mag);
-
-        // гравитация
         ApplyGravityOnly();
     }
 
@@ -106,30 +129,86 @@ if (blockMoveWhileAttacking && IsInAttack())
 
     private void HandleAttackInput()
     {
-        // Для MVP: Space или ЛКМ
         bool attackPressed = Input.GetKeyDown(KeyCode.Space) || Input.GetMouseButtonDown(0);
         if (!attackPressed) return;
         if (Time.time < _nextAttackTime) return;
 
-        // выбрать случайную анимацию атаки (0..2)
-        int idx = 0; //Random.Range(0, 3);
+        int idx = 0; // Random.Range(0, 3);
         animator.SetInteger(attackIndexParam, idx);
         animator.SetTrigger(attackTrigger);
 
-        // урон — для MVP сразу при нажатии.
-        // Потом сделаем Animation Event "DealDamage" в нужном кадре.
+        // MVP: наносим урон сразу.
         //DealMeleeDamage();
 
         _nextAttackTime = Time.time + attackCooldown;
     }
 
-    private void DealMeleeDamage()
+private void DealMeleeDamage()
+{
+    Collider[] hits = Physics.OverlapSphere(attackPoint.position, attackRange, enemyMask);
+
+    Vector3 hitDir = transform.forward;
+    hitDir.y = 0f;
+    if (hitDir.sqrMagnitude < 0.0001f) hitDir = Vector3.forward;
+
+    for (int i = 0; i < hits.Length; i++)
     {
-        Collider[] hits = Physics.OverlapSphere(attackPoint.position, attackRange, enemyMask);
-        for (int i = 0; i < hits.Length; i++)
+        var col = hits[i];
+
+        // 1) урон сразу
+        var hp = col.GetComponent<Health>();
+        if (hp) hp.TakeDamage(damage);
+
+        // 2) кровь с задержкой (только если реально попали)
+        if (Random.value <= bloodSpawnChance)
         {
-            var hp = hits[i].GetComponent<Health>();
-            if (hp) hp.TakeDamage(damage);
+            Vector3 targetPoint = col.ClosestPoint(attackPoint.position);
+
+            float delay = Mathf.Max(0f, bloodDelay + Random.Range(-bloodDelayJitter, bloodDelayJitter));
+            StartCoroutine(SpawnBloodDelayed(targetPoint, hitDir, delay));
+        }
+    }
+}
+
+private System.Collections.IEnumerator SpawnBloodDelayed(Vector3 hitPoint, Vector3 hitDir, float delay)
+{
+    yield return new WaitForSeconds(delay);
+    SpawnBlood(hitPoint, hitDir);
+}
+
+
+    private void SpawnBlood(Vector3 hitPoint, Vector3 hitDir)
+    {
+        GameObject prefab = null;
+
+        switch (bloodLevel)
+        {
+            case WeaponBloodLevel.Low:     prefab = bloodSmallPrefab; break;
+            case WeaponBloodLevel.Medium:  prefab = bloodMediumPrefab; break;
+            case WeaponBloodLevel.High:
+            case WeaponBloodLevel.Extreme: prefab = bloodHeavyPrefab; break;
+        }
+
+        if (!prefab) return;
+
+        // поворот по направлению удара
+        hitDir.y = 0f;
+        if (hitDir.sqrMagnitude < 0.0001f) hitDir = Vector3.forward;
+
+        Quaternion rot = Quaternion.LookRotation(hitDir.normalized, Vector3.up);
+
+        // точка спавна чуть выше, чтобы не “внутри пола/меша”
+        Vector3 spawnPos = hitPoint + (attackPoint ? attackPoint.TransformVector(bloodSpawnOffset) : new Vector3(0f, 1f, 0.2f));
+
+        var go = Instantiate(prefab, spawnPos, rot);
+        go.transform.localScale *= bloodScale;
+
+        // Extreme = чуть больше "кровищи"
+        if (bloodLevel == WeaponBloodLevel.Extreme && doubleSpawnOnExtreme)
+        {
+            Vector3 extraPos = spawnPos + new Vector3(Random.Range(-0.15f, 0.15f), 0f, Random.Range(-0.15f, 0.15f));
+            var go2 = Instantiate(prefab, extraPos, rot);
+            go2.transform.localScale *= (bloodScale * 1.15f);
         }
     }
 
@@ -137,7 +216,6 @@ if (blockMoveWhileAttacking && IsInAttack())
     public void OnHit()
     {
         if (animator) animator.SetTrigger(hitTrigger);
-        // короткая блокировка управления (подстроишь)
         if (gameObject.activeInHierarchy) StartCoroutine(HitLockRoutine(0.2f));
     }
 
@@ -147,5 +225,4 @@ if (blockMoveWhileAttacking && IsInAttack())
         yield return new WaitForSeconds(t);
         _isHitLock = false;
     }
-
 }
