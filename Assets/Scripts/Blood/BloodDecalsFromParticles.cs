@@ -23,31 +23,50 @@ public class BloodDecalsFromParticles : MonoBehaviour
         _ps = GetComponent<ParticleSystem>();
     }
 
-    void OnParticleCollision(GameObject other)
+/*void OnParticleCollision(GameObject other)
+{
+    if (BloodDecalPool.Instance == null) return;
+
+    // фильтр по слоям (оставь или убери)
+    if (((1 << other.layer) & environmentMask.value) == 0) return;
+
+    int count = _ps.GetCollisionEvents(other, _events);
+    for (int i = 0; i < count; i++)
     {
-   
-         if (BloodDecalPool.Instance == null) return;
-         int count = _ps.GetCollisionEvents(other, _events);
-        if (count <= 0) return;
-
-        int spawned = 0;
-
-        for (int i = 0; i < count; i++)
-        {
-            if (spawned >= maxDecalsPerCollisionMessage) break;
-            if (Random.value > spawnChancePerHit) continue;
-
-            var e = _events[i];
-
-            // Доп. защита: спавним только если реально попали в окружение
-            if (((1 << other.layer) & environmentMask.value) == 0) continue;
-
-            var type = PickType();
-            BloodDecalPool.Instance.Spawn(e.intersection, e.normal, type);
-
-            spawned++;
-        }
+        var e = _events[i];
+        BloodDecalPool.Instance.Spawn(e.intersection, e.normal, BloodDecalType.Splat);
     }
+}*/
+
+void OnParticleCollision(GameObject other)
+{
+    Debug.Log($"OnParticleCollision: {other.name} layer={LayerMask.LayerToName(other.layer)}");
+
+    if (BloodDecalPool.Instance == null)
+    {
+        Debug.LogError("BloodDecalPool.Instance == null (нет пула в сцене)");
+        return;
+    }
+
+    if (((1 << other.layer) & environmentMask.value) == 0)
+    {
+        Debug.LogWarning("Hit filtered by environmentMask");
+        return;
+    }
+
+    int count = _ps.GetCollisionEvents(other, _events);
+    Debug.Log($"Collision events: {count}");
+
+    for (int i = 0; i < count; i++)
+    {
+        var e = _events[i];
+        //BloodDecalPool.Instance.Spawn(e.intersection, e.normal, BloodDecalType.Splat);
+        BloodDecalPool.Instance.Spawn(e.intersection, e.normal, BloodDecalType.Spray);
+
+    }
+}
+
+
 
     private BloodDecalType PickType()
     {
