@@ -34,11 +34,22 @@ public class BloodDecalPool : MonoBehaviour
     public float growDuration = 0.15f;
     [Range(0.5f, 1f)] public float growStartScale = 0.85f;
 
+    [Header("Merge")]
+    public bool enableMerge = true;
+    public float mergeRadius = 0.25f;
+    [Range(0f, 1f)] public float mergeNormalDotMin = 0.85f;
+    public int mergeMinCount = 2;
+    public int mergeMaxCount = 4;
+    public float mergeSizePerDecal = 0.15f;
+    public float mergeMaxScale = 2f;
+
     // DoD_DD«D_ D'D_DñDøDýD,¥,¥O ƒ?oD,¥?¥ØDæDúD«D_DýDæD«D,Dæƒ?? D¨D_ Dý¥?DæD¬DæD«D,, D«D_ ¥,¥< D¨¥?D_¥?D,D¯ DñDøDú¥Ÿ + D¯D,D¬D,¥,¥<
     // D¥?D¯D, DúDø¥.D_¥ØDæ¥^¥O ƒ?" D'D_DñDøDýD,D¬ lifetime + fade.
 
-    private readonly Queue<DecalProjector> _active = new();
+    private readonly List<DecalProjector> _active = new();
     private readonly Stack<DecalProjector> _inactive = new();
+    private readonly List<int> _mergeIndices = new();
+    private readonly List<float> _mergeDistances = new();
 
     public static BloodDecalPool Instance { get; private set; }
 
@@ -68,32 +79,54 @@ public class BloodDecalPool : MonoBehaviour
 
     public void Spawn(Vector3 position, Vector3 normal, BloodDecalType type)
     {
+        Spawn(position, normal, type, Vector3.zero, 1f, 1f);
+    }
+
+    public void Spawn(Vector3 position, Vector3 normal, BloodDecalType type, Vector3 directionOnPlane, float stretchFactor)
+    {
+        Spawn(position, normal, type, directionOnPlane, stretchFactor, 1f);
+    }
+
+    public void SpawnWithMerge(Vector3 position, Vector3 normal, BloodDecalType type, Vector3 directionOnPlane, float stretchFactor)
+    {
+        if (TryMergeAndSpawn(position, normal, type, directionOnPlane, stretchFactor)) return;
+        Spawn(position, normal, type, directionOnPlane, stretchFactor, 1f);
+    }
+
+    public void Spawn(Vector3 position, Vector3 normal, BloodDecalType type, Vector3 directionOnPlane, float stretchFactor, float sizeMultiplier)
+    {
         var variant = GetVariant(type);
         if (variant.material == null) return;
 
         var decal = GetDecal();
 
-        // DYD_DúD,¥+D,¥? + D«DæDñD_D¯¥O¥^D_D1 D_¥,¥?¥,¥ŸD¨ D¨D_ D«D_¥?D¬DøD¯D,
         decal.transform.position = position + normal * surfaceOffset;
 
-        // Dz¥?D,DæD«¥,Dø¥+D,¥?: D¨¥?D_DæD§¥+D,¥? ƒ?oDý D¨D_DýDæ¥?¥.D«D_¥?¥,¥Oƒ??
-        // DecalProjector ¥?D¬D_¥,¥?D,¥, DýD'D_D¯¥O ¥?DýD_DæD3D_ forward (Z). D?DøD¬ D«DøD'D_ forward = -normal.
         var rot = Quaternion.LookRotation(-normal, Vector3.up);
 
-        if (randomYaw)
+        Vector3 up = Vector3.ProjectOnPlane(directionOnPlane, normal);
+        bool hasDirection = up.sqrMagnitude > 0.0001f;
+        if (hasDirection)
         {
-            // D'¥?Dø¥%DøDæD¬ DýD_D§¥?¥ŸD3 D«D_¥?D¬DøD¯D, (¥Ø¥,D_Dñ¥< D«Dæ Dñ¥<D¯D_ D_D'D,D«DøD§D_Dý¥<¥. D¨Dø¥,¥,Dæ¥?D«D_Dý)
+            rot = Quaternion.LookRotation(-normal, up.normalized);
+        }
+
+        if (randomYaw && !hasDirection)
+        {
             rot = Quaternion.AngleAxis(Random.Range(0f, 360f), normal) * rot;
         }
 
         decal.transform.rotation = rot;
 
-        // DÿDøDúD¬Dæ¥?¥<
         float sx = Random.Range(variant.sizeX.x, variant.sizeX.y);
         float sy = Random.Range(variant.sizeY.x, variant.sizeY.y);
         float sz = Random.Range(variant.sizeZ.x, variant.sizeZ.y);
         float scaleMultiplier = Random.Range(randomScaleMultiplier.x, randomScaleMultiplier.y);
-        Vector3 targetSize = new Vector3(sx, sy, sz) * scaleMultiplier;
+        Vector3 targetSize = new Vector3(sx, sy, sz) * scaleMultiplier * sizeMultiplier;
+        if (stretchFactor > 1f)
+        {
+            targetSize = new Vector3(targetSize.x, targetSize.y * stretchFactor, targetSize.z);
+        }
 
         if (enableGrowth && growDuration > 0f && growStartScale > 0f && growStartScale < 1f)
         {
@@ -105,18 +138,16 @@ public class BloodDecalPool : MonoBehaviour
             decal.size = targetSize;
         }
 
-        // DoDø¥,Dæ¥?D,DøD¯ ¥,D_¥?D¬¥<
         decal.material = variant.material;
 
         decal.gameObject.SetActive(true);
 
-        // FIFO-¥Ÿ¥Ø¥`¥, DøD§¥,D,DýD«¥<¥.
-        _active.Enqueue(decal);
+        _active.Add(decal);
 
-        // D¥?D¯D, D¨¥?DæDý¥<¥?D,D¯D, D¯D,D¬D,¥, ƒ?" D¨Dæ¥?DæD,¥?D¨D_D¯¥ODú¥ŸDæD¬ ¥?DøD¬¥<D1 ¥?¥,Dø¥?¥<D1
         while (_active.Count > maxActiveDecals)
         {
-            var old = _active.Dequeue();
+            var old = _active[0];
+            _active.RemoveAt(0);
             Recycle(old);
         }
     }
@@ -129,7 +160,8 @@ public class BloodDecalPool : MonoBehaviour
         // D¥?D¯D, D¨¥ŸD¯ D¨¥Ÿ¥?¥,, D¨Dæ¥?DæD,¥?D¨D_D¯¥ODú¥ŸDæD¬ ¥?DøD¬¥<D1 ¥?¥,Dø¥?¥<D1 DøD§¥,D,DýD«¥<D1
         if (_active.Count > 0)
         {
-            var old = _active.Dequeue();
+            var old = _active[0];
+            _active.RemoveAt(0);
             old.gameObject.SetActive(false);
             return old;
         }
@@ -161,6 +193,76 @@ public class BloodDecalPool : MonoBehaviour
     {
         if (decal.TryGetComponent(out BloodDecalGrow grow)) return grow;
         return decal.gameObject.AddComponent<BloodDecalGrow>();
+    }
+
+    private bool TryMergeAndSpawn(Vector3 position, Vector3 normal, BloodDecalType type, Vector3 directionOnPlane, float stretchFactor)
+    {
+        if (!enableMerge || mergeMinCount <= 0 || mergeMaxCount <= 0) return false;
+
+        float radiusSqr = mergeRadius * mergeRadius;
+        _mergeIndices.Clear();
+        _mergeDistances.Clear();
+
+        for (int i = 0; i < _active.Count; i++)
+        {
+            var decal = _active[i];
+            if (decal == null || !decal.gameObject.activeInHierarchy) continue;
+
+            Vector3 to = decal.transform.position - position;
+            float d = to.sqrMagnitude;
+            if (d > radiusSqr) continue;
+
+            float dot = Vector3.Dot(-decal.transform.forward, normal);
+            if (dot < mergeNormalDotMin) continue;
+
+            if (_mergeIndices.Count < mergeMaxCount)
+            {
+                _mergeIndices.Add(i);
+                _mergeDistances.Add(d);
+            }
+            else
+            {
+                int farIndex = 0;
+                float farDist = _mergeDistances[0];
+                for (int j = 1; j < _mergeDistances.Count; j++)
+                {
+                    if (_mergeDistances[j] > farDist)
+                    {
+                        farDist = _mergeDistances[j];
+                        farIndex = j;
+                    }
+                }
+
+                if (d < farDist)
+                {
+                    _mergeIndices[farIndex] = i;
+                    _mergeDistances[farIndex] = d;
+                }
+            }
+        }
+
+        if (_mergeIndices.Count < mergeMinCount) return false;
+
+        Vector3 avgPos = position;
+        for (int i = 0; i < _mergeIndices.Count; i++)
+        {
+            avgPos += _active[_mergeIndices[i]].transform.position;
+        }
+        avgPos /= (_mergeIndices.Count + 1);
+
+        _mergeIndices.Sort();
+        for (int i = _mergeIndices.Count - 1; i >= 0; i--)
+        {
+            int idx = _mergeIndices[i];
+            if (idx < 0 || idx >= _active.Count) continue;
+            var old = _active[idx];
+            _active.RemoveAt(idx);
+            Recycle(old);
+        }
+
+        float sizeMultiplier = Mathf.Min(mergeMaxScale, 1f + _mergeIndices.Count * mergeSizePerDecal);
+        Spawn(avgPos, normal, type, directionOnPlane, stretchFactor, sizeMultiplier);
+        return true;
     }
 }
 

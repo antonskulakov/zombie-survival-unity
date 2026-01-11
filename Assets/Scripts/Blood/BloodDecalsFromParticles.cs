@@ -15,12 +15,29 @@ public class BloodDecalsFromParticles : MonoBehaviour
     [Range(0f, 1f)] public float sprayChance = 0.15f;
     [Range(0f, 1f)] public float smearChance = 0.10f;
 
+    [Header("Strong hit decals")]
+    public Transform sourceTransform;
+    public float strongHitMinSpeed = 1.5f;
+    public float strongHitMaxSpeed = 8f;
+    public float strongHitMaxElongation = 1.5f;
+    [Range(0f, 1f)] public float floorNormalMin = 0.7f;
+
     private ParticleSystem _ps;
     private readonly List<ParticleCollisionEvent> _events = new();
 
     void Awake()
     {
         _ps = GetComponent<ParticleSystem>();
+        if (sourceTransform == null)
+        {
+            var player = GameObject.FindWithTag("Player");
+            if (player != null) sourceTransform = player.transform;
+            else
+            {
+                var pc = FindObjectOfType<PlayerController>();
+                if (pc != null) sourceTransform = pc.transform;
+            }
+        }
     }
 
 /*void OnParticleCollision(GameObject other)
@@ -58,7 +75,31 @@ public class BloodDecalsFromParticles : MonoBehaviour
             if (Random.value > spawnChancePerHit) continue;
 
             var e = _events[i];
-            Pool.Spawn(e.intersection, e.normal, PickType());
+            float speed = e.velocity.magnitude;
+            float t = Mathf.InverseLerp(strongHitMinSpeed, strongHitMaxSpeed, speed);
+            bool strongHit = t > 0f;
+            Vector3 dirOnPlane = Vector3.zero;
+            float stretch = 1f;
+
+            if (strongHit && e.normal.y >= floorNormalMin)
+            {
+                Vector3 sourcePos = sourceTransform ? sourceTransform.position : _ps.transform.position;
+                Vector3 away = e.intersection - sourcePos;
+                away = Vector3.ProjectOnPlane(away, e.normal);
+                if (away.sqrMagnitude < 0.0001f)
+                {
+                    away = Vector3.ProjectOnPlane(e.velocity, e.normal);
+                    if (away.sqrMagnitude < 0.0001f)
+                    {
+                        away = Vector3.ProjectOnPlane(_ps.transform.forward, e.normal);
+                    }
+                }
+
+                dirOnPlane = away;
+                stretch = Mathf.Lerp(1f, Mathf.Max(1f, strongHitMaxElongation), t);
+            }
+
+            Pool.SpawnWithMerge(e.intersection, e.normal, PickType(), dirOnPlane, stretch);
             spawned++;
         }
     }

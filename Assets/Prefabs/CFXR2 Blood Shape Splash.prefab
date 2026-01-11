@@ -9691,6 +9691,11 @@ MonoBehaviour:
   maxDecalsPerCollisionMessage: 4
   sprayChance: 1
   smearChance: 0.135
+  sourceTransform: {fileID: 0}
+  strongHitMinSpeed: 0.5
+  strongHitMaxSpeed: 8
+  strongHitMaxElongation: 1.5
+  floorNormalMin: 0.7
 --- !u!1 &7633401793159581823
 GameObject:
   m_ObjectHideFlags: 0
