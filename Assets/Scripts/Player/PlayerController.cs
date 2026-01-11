@@ -86,7 +86,7 @@ public float bloodDelayJitter = 0.02f;
 
     private void HandleMove()
     {
-        Debug.Log($"H={Input.GetAxisRaw("Horizontal")} V={Input.GetAxisRaw("Vertical")}");
+        //Debug.Log($"H={Input.GetAxisRaw("Horizontal")} V={Input.GetAxisRaw("Vertical")}");
 
         if (_isHitLock) { SetSpeedAnim(0f); ApplyGravityOnly(); return; }
 
