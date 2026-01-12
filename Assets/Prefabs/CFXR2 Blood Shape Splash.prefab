@@ -9689,8 +9689,8 @@ MonoBehaviour:
     m_Bits: 1024
   spawnChancePerHit: 0.35
   maxDecalsPerCollisionMessage: 4
-  sprayChance: 1
-  smearChance: 0.135
+  sprayChance: 0.839
+  smearChance: 0
   sourceTransform: {fileID: 0}
   strongHitMinSpeed: 0.5
   strongHitMaxSpeed: 8
