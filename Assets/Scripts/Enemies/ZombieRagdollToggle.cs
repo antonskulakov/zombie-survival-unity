@@ -10,10 +10,16 @@ public class ZombieRagdollToggle : MonoBehaviour
     [Header("Ragdoll")]
     [SerializeField] private float ragdollTime = 3f;
 
+    [Header("Death Impulse")]
+    [SerializeField] private float deathImpulse = 2.5f;
+    [SerializeField] private float deathImpulseUp = 1.0f;
+    [SerializeField] private Rigidbody impulseTarget;
+
     private Rigidbody[] rbs;
     private Collider[] cols;
 
     private bool _dead;
+    private Vector3 _pendingImpulseDir;
 
     [Header("Layers")]
     [SerializeField] private string ragdollLayerName = "EnemyRagdoll";
@@ -35,9 +41,15 @@ public class ZombieRagdollToggle : MonoBehaviour
     // Вызывай при смерти
     public void PlayDeathRagdoll()
     {
+        PlayDeathRagdoll(transform.forward);
+    }
+
+    public void PlayDeathRagdoll(Vector3 hitDir)
+    {
         if (_dead) return;
         _dead = true;
 
+        _pendingImpulseDir = hitDir;
         StopAllCoroutines();
         StartCoroutine(RagdollRoutine());
     }
@@ -95,6 +107,8 @@ public class ZombieRagdollToggle : MonoBehaviour
             if (_ragdollLayer != -1)
             c.gameObject.layer = _ragdollLayer;
         }
+
+        ApplyDeathImpulse();
     }
 
     // Corpse state: после 3 сек выключаем физику/коллизии (макс оптимизация)
@@ -113,5 +127,34 @@ public class ZombieRagdollToggle : MonoBehaviour
             if (c is CharacterController) continue;
             c.enabled = false;
         }
+    }
+
+    private void ApplyDeathImpulse()
+    {
+        if (deathImpulse <= 0f) return;
+
+        Vector3 dir = _pendingImpulseDir;
+        dir.y = 0f;
+        if (dir.sqrMagnitude < 0.0001f) dir = transform.forward;
+        dir.Normalize();
+
+        Vector3 impulse = (dir * deathImpulse) + (Vector3.up * deathImpulseUp);
+
+        Rigidbody target = impulseTarget;
+        if (!target)
+        {
+            float maxMass = -1f;
+            for (int i = 0; i < rbs.Length; i++)
+            {
+                if (!rbs[i]) continue;
+                if (rbs[i].mass > maxMass)
+                {
+                    maxMass = rbs[i].mass;
+                    target = rbs[i];
+                }
+            }
+        }
+
+        if (target) target.AddForce(impulse, ForceMode.Impulse);
     }
 }

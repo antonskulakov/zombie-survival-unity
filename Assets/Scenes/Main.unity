@@ -4021,6 +4021,8 @@ MonoBehaviour:
   animLayer: 0
   hitTrigger: Hit
   hitStunTime: 2
+  gravity: -20
+  groundedStickForce: -2
 --- !u!114 &344942566
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4036,6 +4038,7 @@ MonoBehaviour:
   characterController: {fileID: 0}
   animator: {fileID: 0}
   ragdollTime: 3
+  ragdollLayerName: EnemyRagdoll
 --- !u!114 &344942567
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4048,7 +4051,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d8f8b8377501842459ba48933330091a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHp: 20
+  maxHp: 50
   hp: 0
   animator: {fileID: 0}
   destroyOnDeath: 0
@@ -4165,6 +4168,8 @@ MonoBehaviour:
   animLayer: 0
   hitTrigger: Hit
   hitStunTime: 0.25
+  gravity: -20
+  groundedStickForce: -2
 --- !u!65 &366010617
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -4378,6 +4383,8 @@ MonoBehaviour:
   animLayer: 0
   hitTrigger: Hit
   hitStunTime: 2
+  gravity: -20
+  groundedStickForce: -2
 --- !u!114 &423110482
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4393,6 +4400,7 @@ MonoBehaviour:
   characterController: {fileID: 0}
   animator: {fileID: 0}
   ragdollTime: 3
+  ragdollLayerName: EnemyRagdoll
 --- !u!114 &423110483
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4405,7 +4413,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d8f8b8377501842459ba48933330091a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHp: 20
+  maxHp: 50
   hp: 0
   animator: {fileID: 0}
   destroyOnDeath: 0
@@ -6102,6 +6110,8 @@ MonoBehaviour:
   animLayer: 0
   hitTrigger: Hit
   hitStunTime: 2
+  gravity: -20
+  groundedStickForce: -2
 --- !u!114 &679747949
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6117,6 +6127,7 @@ MonoBehaviour:
   characterController: {fileID: 0}
   animator: {fileID: 0}
   ragdollTime: 3
+  ragdollLayerName: EnemyRagdoll
 --- !u!114 &679747950
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6129,7 +6140,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d8f8b8377501842459ba48933330091a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHp: 20
+  maxHp: 50
   hp: 0
   animator: {fileID: 0}
   destroyOnDeath: 0
@@ -6562,6 +6573,8 @@ MonoBehaviour:
   animLayer: 0
   hitTrigger: Hit
   hitStunTime: 2
+  gravity: -20
+  groundedStickForce: -2
 --- !u!143 &813451647
 CharacterController:
   m_ObjectHideFlags: 0
@@ -6721,6 +6734,8 @@ MonoBehaviour:
   animLayer: 0
   hitTrigger: Hit
   hitStunTime: 2
+  gravity: -20
+  groundedStickForce: -2
 --- !u!114 &830253851
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6736,6 +6751,7 @@ MonoBehaviour:
   characterController: {fileID: 0}
   animator: {fileID: 0}
   ragdollTime: 3
+  ragdollLayerName: EnemyRagdoll
 --- !u!114 &830253852
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6748,7 +6764,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d8f8b8377501842459ba48933330091a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHp: 20
+  maxHp: 50
   hp: 0
   animator: {fileID: 0}
   destroyOnDeath: 0
@@ -11765,6 +11781,8 @@ MonoBehaviour:
   animLayer: 0
   hitTrigger: Hit
   hitStunTime: 2
+  gravity: -20
+  groundedStickForce: -2
 --- !u!114 &1460364602
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11777,7 +11795,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d8f8b8377501842459ba48933330091a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHp: 20
+  maxHp: 50
   hp: 0
   animator: {fileID: 0}
   destroyOnDeath: 0
@@ -11843,6 +11861,7 @@ MonoBehaviour:
   characterController: {fileID: 0}
   animator: {fileID: 0}
   ragdollTime: 3
+  ragdollLayerName: EnemyRagdoll
 --- !u!1 &1495133001 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -7657966619581158213, guid: 418b3448fd0776049ae3cefd58d2c4ea,

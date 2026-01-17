@@ -157,7 +157,7 @@ private void DealMeleeDamage()
 
         // 1) урон сразу
         var hp = col.GetComponent<Health>();
-        if (hp) hp.TakeDamage(damage);
+        if (hp) hp.TakeDamage(damage, hitDir);
 
         // 2) кровь с задержкой (только если реально попали)
         if (Random.value <= bloodSpawnChance)

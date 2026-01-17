@@ -18,6 +18,11 @@ public class Health : MonoBehaviour
 
     public void TakeDamage(int amount)
     {
+        TakeDamage(amount, Vector3.zero);
+    }
+
+    public void TakeDamage(int amount, Vector3 hitDir)
+    {
         if (_dead) return;
 
         hp -= amount;
@@ -32,7 +37,7 @@ public class Health : MonoBehaviour
             var ragdoll = GetComponentInChildren<ZombieRagdollToggle>();
             if (ragdoll)
             {
-                ragdoll.PlayDeathRagdoll();
+                ragdoll.PlayDeathRagdoll(hitDir);
                 if (destroyOnDeath) Destroy(gameObject, 3.2f);
             }
             else
