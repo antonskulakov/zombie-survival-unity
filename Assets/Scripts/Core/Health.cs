@@ -24,9 +24,25 @@ public class Health : MonoBehaviour
         if (hp <= 0)
         {
             _dead = true;
-            if (animator) animator.SetTrigger("Die");
-            if (destroyOnDeath) Destroy(gameObject, 0.25f);
+
+            // выключаем AI/движение
+            var chase = GetComponent<ZombieChase>();
+            if (chase) chase.enabled = false;
+
+            var ragdoll = GetComponentInChildren<ZombieRagdollToggle>();
+            if (ragdoll)
+            {
+                ragdoll.PlayDeathRagdoll();
+                if (destroyOnDeath) Destroy(gameObject, 3.2f);
+            }
+            else
+            {
+                if (animator) animator.SetTrigger("Die");
+                if (destroyOnDeath) Destroy(gameObject, 0.25f);
+            }
         }
+
+
         else
         {
             if (animator) animator.SetTrigger("Hit");
