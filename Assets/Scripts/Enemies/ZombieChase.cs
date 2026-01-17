@@ -25,6 +25,12 @@ public class ZombieChase : MonoBehaviour
     private bool _isStunned;
     private Coroutine _stunCo;
 
+    [Header("Gravity")]
+    public float gravity = -20f;
+    public float groundedStickForce = -2f;
+
+    private float _verticalVelocity;
+
     private void Awake()
     {
         _cc = GetComponent<CharacterController>();
@@ -46,6 +52,17 @@ public class ZombieChase : MonoBehaviour
             return;
         }
 
+        // ===== GRAVITY =====
+        if (_cc.isGrounded)
+        {
+            if (_verticalVelocity < 0f)
+                _verticalVelocity = groundedStickForce; // прижимаем к земле
+        }
+        else
+        {
+            _verticalVelocity += gravity * Time.deltaTime;
+        }
+
         Vector3 dir = target.position - transform.position;
         dir.y = 0f;
 
@@ -62,7 +79,11 @@ public class ZombieChase : MonoBehaviour
         Quaternion rot = Quaternion.LookRotation(move, Vector3.up);
         transform.rotation = Quaternion.Slerp(transform.rotation, rot, rotateSpeed * Time.deltaTime);
 
-        _cc.Move(move * speed * Time.deltaTime);
+        //_cc.Move(move * speed * Time.deltaTime);
+        Vector3 finalMove = move * speed;
+        finalMove.y = _verticalVelocity;
+
+        _cc.Move(finalMove * Time.deltaTime);
     }
 
     // Вызвать при получении урона:
