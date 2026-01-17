@@ -15,6 +15,10 @@ public class ZombieRagdollToggle : MonoBehaviour
 
     private bool _dead;
 
+    [Header("Layers")]
+    [SerializeField] private string ragdollLayerName = "EnemyRagdoll";
+    private int _ragdollLayer;
+
     private void Awake()
     {
         if (!characterController) characterController = GetComponent<CharacterController>();
@@ -25,6 +29,7 @@ public class ZombieRagdollToggle : MonoBehaviour
 
         // На старте держим ragdoll "в ноль" (оптимизация)
         DisableRagdollHardAlive();
+        _ragdollLayer = LayerMask.NameToLayer(ragdollLayerName);
     }
 
     // Вызывай при смерти
@@ -87,6 +92,8 @@ public class ZombieRagdollToggle : MonoBehaviour
         {
             if (c is CharacterController) continue;
             c.enabled = true;
+            if (_ragdollLayer != -1)
+            c.gameObject.layer = _ragdollLayer;
         }
     }
 
